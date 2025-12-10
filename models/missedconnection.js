@@ -1,5 +1,5 @@
 let mongoose = require('mongoose');
-
+//define schema
 let missedConnectionSchema = new mongoose.Schema({
     title: {
         type: String,

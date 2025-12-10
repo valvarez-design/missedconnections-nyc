@@ -11,17 +11,26 @@ socket.on('disconnect', () => {
     console.log('disconnected from server');
 });
 
-//initialize map centered on new york city
-let map = L.map('map').setView([40.7128, -74.0060], 12);
+//initialize map centered on new york city + define bounds
+let map = L.map('map', {
+    preferCanvas: true, //stabilizes rendering of heart markers
+    maxBounds: [[40.4774, -74.2591], [40.9176, -73.7004]], // NYC bounding box
+    maxBoundsViscosity: 1.0, //prevent scroll outside of bounds
+    minZoom: 11, //minimum zoom
+    maxZoom: 19, //maximum zoom
+}).setView([40.7128, -74.0060], 12); //center on NYC
 
-//add tile layer to map
+
+
+
+//add tile layer to map 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '© OpenStreetMap © CartoDB',
     subdomains: 'abcd',
     maxZoom: 19
 }).addTo(map);
 
-//create custom heart icon for markers
+//custom heart icon for markers 
 let heartIcon = L.divIcon({
     className: 'custom-heart-marker',
     html: '<svg width="30" height="30" viewBox="0 0 24 24" fill="orchid" stroke="#ff69b4" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>',
@@ -30,7 +39,7 @@ let heartIcon = L.divIcon({
     popupAnchor: [0, -30]
 });
 
-//
+//variable to hold selected location coordinates
 let selectedLocation = null;
 
 //create suggestions dropdown
@@ -49,10 +58,10 @@ locationInput.addEventListener('input', async (e) => {
         suggestionsDiv.style.display = 'none';
         return;
     }
-
+//show loading message
     suggestionsDiv.innerHTML = 'loading...';
     suggestionsDiv.style.display = 'block';
-
+//debounce geocoding requests
     geocodeTimeout = setTimeout(async (e) => {
         try {
             let response = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
@@ -62,17 +71,19 @@ locationInput.addEventListener('input', async (e) => {
             } else {
                 suggestionsDiv.innerHTML = '<div class="suggestion-item error">Not found in NYC</div>';
             }
-        } catch (error) {
-            body: JSON.stringify({ title, location: locationInput.value, description, coordinates: selectedLocation })
+        }  catch (error) {
+    suggestionsDiv.innerHTML = '<div class="suggestion-item error">Location not found</div>';
+    console.error('geocoding error:', error);
         }
     }, 500);
 });
 
+//function to select location from suggestions
 function selectLocation(lat, lng, address) {
     selectedLocation = { lat, lng };
     locationInput.value = address;
     suggestionsDiv.style.display = 'none';
-
+    //add temporary marker to map
     if (window.tempMarker) map.removeLayer(window.tempMarker);
     window.tempMarker = L.marker([lat, lng], { icon: heartIcon }).addTo(map)
         .bindPopup('Your connection will appear here').openPopup();
@@ -82,8 +93,8 @@ function selectLocation(lat, lng, address) {
 //function to add marker to map
 function addMarkerToMap(connection) {
     let { coordinates, title, location, description, createdAt } = connection;
-
-    let date = new Date(createdAt);    // Use toLocaleString to include both date and time (toLocaleDateString ignores time options)
+    //date formatting
+    let date = new Date(createdAt);    // Use toLocaleString to include both date and time
     let formattedDate = date.toLocaleString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -91,10 +102,10 @@ function addMarkerToMap(connection) {
         hour: '2-digit',
         minute: '2-digit'
     });
-
+    //create marker
     let marker = L.marker([coordinates.lat, coordinates.lng], { icon: heartIcon })
         .addTo(map);
-
+    //create popup content
     let popupContent = `
         <div class="connection-popup">
             <h3 style="color: orchid; margin-top: 0;">${title}</h3>
@@ -103,12 +114,12 @@ function addMarkerToMap(connection) {
             <p style="margin: 5px 0; font-size: 12px; color: #999;">${formattedDate}</p>
         </div>
     `;
-
+    //bind popup to marker
     marker.bindPopup(popupContent, {
         maxWidth: 300,
         className: 'custom-popup'
     });
-
+    //animate marker with pulse effect
     let markerElement = marker.getElement();
     if (markerElement) {
         markerElement.classList.add('pulse');
@@ -154,10 +165,10 @@ document.getElementById('submitBtn').addEventListener('click', function () {
 
         //add marker to map at specified location + save to database 
         let title = document.getElementById('title').value;
-
+        //update button state
         this.textContent = 'submitting...';
         this.disabled = true;
-
+        //post to server
         fetch('/api/connections', {
             method: 'POST',
             headers: {
@@ -172,32 +183,37 @@ document.getElementById('submitBtn').addEventListener('click', function () {
         })
             .then(response => {
                 if (!response.ok) {
-                            throw new Error('failed to submit connection');
-                        }
-                        return response.json();
-                    })
-                    .then(newConnection => {
-                        console.log('connection saved:', newConnection);
+                    throw new Error('failed to submit connection');
+                }
+                return response.json();
+            })
+            .then(newConnection => {
+                console.log('connection saved:', newConnection);
 
 
-                        //clear form inputs
-                        document.getElementById('locationinput').value = '';
-                        document.getElementById('descriptioninput').value = '';
+                //reset form
+                document.getElementById('locationinput').value = '';
+                document.getElementById('descriptioninput').value = '';
 
-                        document.getElementById('title').value = '';
-                        alert('your missed connection has been added!');
+                document.getElementById('title').value = '';
+                alert('your missed connection has been added!');
+                //remove temporary marker after successful submission
+                if (window.tempMarker) {
+                    map.removeLayer(window.tempMarker);
+                    window.tempMarker = null;
+                }
 
-                        this.textContent = 'Submit';
-                        this.disabled = false;
-                    })
-                    .catch(error => {
-                        console.error('error submitting connection:', error);
-                        alert('oops! something went wrong. please try again.');
+                this.textContent = 'Submit';
+                this.disabled = false;
+            }) 
+            .catch(error => {
+                console.error('error submitting connection:', error);
+                alert('oops! something went wrong. please try again.');
 
-                        this.textContent = 'Submit';
-                        this.disabled = false;
-                    });
-            } else {
-                alert('Oops! Please enter both the location and description.');
-            }
-        })
+                this.textContent = 'Submit';
+                this.disabled = false;
+            });
+    } else {
+        alert('Oops! Please enter both the location and description.');
+    }
+})

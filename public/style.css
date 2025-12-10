@@ -1,4 +1,4 @@
-/* the vibe is early 2000s apple aesthetic with mexican design inspiration*/
+/* the vibe is early 2000s aesthetic ~ think smooth y2k */
 
 body {
     background-color: black;
@@ -10,12 +10,22 @@ body {
 h1 {
     font-size: 48px;
     text-align: center;
-    margin-top: 50px;
+    margin-top: 10px;
     cursor: pointer;
+    border: 3px solid orchid; 
+    padding: 20px;
+    display: inline-block;
+    margin-left: auto;
+    margin-right: auto;
+    width: fit-content;
+    position: relative;
+    left: 50%;
+    transform: translateX(-50%);
 }
-/* stopped working will debug later */
+/* fixed, yay! */
 h1:hover {
-    color: orchid;
+    color: black;
+    background-color: orchid; /* background on hover */
     text-decoration: blink;
 }
 
@@ -24,6 +34,7 @@ h2
     font-size: 20px;
     text-align: center;
     margin-top: 15px;
+    font-style: italic;
 }
 
 h3
@@ -31,12 +42,15 @@ h3
     font-size: 20px;
     text-align: center;
     margin-top: 15px;
+    font-style: italic;
 }
 h4
 {
     font-size: 24px;
     text-align: center;
-    margin-top: 10px;
+    margin-top: 30px;
+    padding: 10px;
+
 }
 h5
 {

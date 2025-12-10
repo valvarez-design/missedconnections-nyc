@@ -1,6 +1,6 @@
 let fetch = require('node-fetch');
 
-// NYC Open Data API endpoint - FREE, no API key needed!
+// NYC Open Data API endpoint
 const NYC_ADDRESS_API = "https://data.cityofnewyork.us/resource/uf93-f8nk.json";
 
 // Geocoding function using NYC Open Data
